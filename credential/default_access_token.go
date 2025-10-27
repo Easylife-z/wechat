@@ -11,13 +11,21 @@ import (
 )
 
 const (
-	// accessTokenURL 获取access_token的接口
+	// 获取access_token的接口
 	accessTokenURL = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=%s&secret=%s"
-	// stableAccessTokenURL 获取稳定版access_token的接口
+	// 获取稳定版access_token的接口
 	stableAccessTokenURL = "https://api.weixin.qq.com/cgi-bin/stable_token"
-	// CacheKeyOfficialAccountPrefix 微信公众号cache key前缀
+	// 微信公众号cache key前缀
 	CacheKeyOfficialAccountPrefix = "gowechat_officialaccount_"
 )
+
+// 获取access_token，微信响应结果
+type ResAccessToken struct {
+	util.CommonError
+
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+}
 
 // DefaultAccessToken 默认AccessToken 获取
 type DefaultAccessToken struct {
@@ -28,7 +36,6 @@ type DefaultAccessToken struct {
 	accessTokenLock *sync.Mutex
 }
 
-// NewDefaultAccessToken new DefaultAccessToken
 func NewDefaultAccessToken(appID, appSecret, cacheKeyPrefix string, cache cache.Cache) AccessTokenContextHandle {
 	if cache == nil {
 		panic("cache is ineed")
@@ -40,14 +47,6 @@ func NewDefaultAccessToken(appID, appSecret, cacheKeyPrefix string, cache cache.
 		cacheKeyPrefix:  cacheKeyPrefix,
 		accessTokenLock: new(sync.Mutex),
 	}
-}
-
-// ResAccessToken struct
-type ResAccessToken struct {
-	util.CommonError
-
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int64  `json:"expires_in"`
 }
 
 // GetAccessToken 获取access_token,先从cache中获取，没有则从服务端获取
@@ -83,6 +82,7 @@ func (ak *DefaultAccessToken) GetAccessTokenContext(ctx context.Context) (access
 		return
 	}
 
+	// 相当于提前25min获取access_token
 	expires := resAccessToken.ExpiresIn - 1500
 	err = ak.cache.Set(accessTokenCacheKey, resAccessToken.AccessToken, time.Duration(expires)*time.Second)
 

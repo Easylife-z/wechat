@@ -18,7 +18,7 @@ func NewOpenPlatform(cfg *config.Config) *OpenPlatform {
 	return &OpenPlatform{ctx}
 }
 
-// GetOfficialAccount 公众号代处理（appID就是要代处理的公众号）
+// GetOfficialAccount 获取要代处理的公众号（appID就是要代处理的公众号）
 func (openPlatform *OpenPlatform) GetOfficialAccount(appID string) *officialaccount.OfficialAccount {
 	return officialaccount.NewOfficialAccount(openPlatform.Context, appID)
 }

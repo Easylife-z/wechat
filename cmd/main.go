@@ -10,6 +10,11 @@ func main() {
 	opf := InitOpenPlatform(wc)
 
 	// 3、公众号代处理
+
+	// 3.1 获取授权链接
 	oauthUrl := GetRedirectUrl(opf)
 	fmt.Println(oauthUrl)
+
+	//	3.2 获取微信用户基本信息
+	GetUserInfo(opf, "")
 }

@@ -17,6 +17,11 @@ var uriModifier URIModifier
 // DefaultHTTPClient 默认httpClient
 var DefaultHTTPClient = http.DefaultClient
 
+// HTTPGet get 请求
+func HTTPGet(uri string) ([]byte, error) {
+	return HTTPGetContext(context.Background(), uri)
+}
+
 // HTTPGetContext get 请求
 func HTTPGetContext(ctx context.Context, uri string) ([]byte, error) {
 	if uriModifier != nil {
@@ -46,7 +51,7 @@ func PostJSONContext(ctx context.Context, uri string, obj interface{}) ([]byte, 
 	jsonBuf := new(bytes.Buffer)
 	enc := json.NewEncoder(jsonBuf)
 	enc.SetEscapeHTML(false)
-	err := enc.Encode(obj)
+	err := enc.Encode(obj) // 将obj的json字符串格式写入到jsonBuf
 	if err != nil {
 		return nil, err
 	}

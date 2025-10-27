@@ -4,11 +4,13 @@ import (
 	"github.com/Easylife-z/wechat/credential"
 	"github.com/Easylife-z/wechat/officialaccount/config"
 	"github.com/Easylife-z/wechat/officialaccount/context"
+	"github.com/Easylife-z/wechat/officialaccount/oauth"
 )
 
 // OfficialAccount 微信公众号相关API
 type OfficialAccount struct {
-	ctx *context.Context
+	ctx   *context.Context
+	oauth *oauth.Oauth
 }
 
 // NewOfficialAccount 实例化公众号API
@@ -35,4 +37,12 @@ func (officialAccount *OfficialAccount) SetAccessTokenHandle(accessTokenHandle c
 // GetContext get Context
 func (officialAccount *OfficialAccount) GetContext() *context.Context {
 	return officialAccount.ctx
+}
+
+// GetOauth oauth2网页授权
+func (officialAccount *OfficialAccount) GetOauth() *oauth.Oauth {
+	if officialAccount.oauth == nil {
+		officialAccount.oauth = oauth.NewOauth(officialAccount.ctx)
+	}
+	return officialAccount.oauth
 }

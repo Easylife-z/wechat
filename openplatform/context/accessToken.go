@@ -11,8 +11,23 @@ import (
 )
 
 const (
+	// 获取授权账号调用令牌
 	refreshTokenURL = "https://api.weixin.qq.com/cgi-bin/component/api_authorizer_token?component_access_token=%s"
 )
+
+// 获取授权账号调用令牌返回结果-授权方AccessToken
+type AuthrAccessToken struct {
+	Appid        string `json:"authorizer_appid"`
+	AccessToken  string `json:"authorizer_access_token"`
+	ExpiresIn    int64  `json:"expires_in"`
+	RefreshToken string `json:"authorizer_refresh_token"`
+}
+
+// GetAuthrAccessToken 获取授权方AccessToken
+// 会依次调用GetAuthrAccessTokenContext、RefreshAuthrTokenContext、GetComponentAccessTokenContext
+func (ctx *Context) GetAuthrAccessToken(appid string) (string, error) {
+	return ctx.GetAuthrAccessTokenContext(context.Background(), appid)
+}
 
 // GetAuthrAccessTokenContext 获取授权方AccessToken
 func (ctx *Context) GetAuthrAccessTokenContext(stdCtx context.Context, appid string) (string, error) {
@@ -31,29 +46,6 @@ func (ctx *Context) GetAuthrAccessTokenContext(stdCtx context.Context, appid str
 		return token.AccessToken, nil
 	}
 
-	return val.(string), nil
-}
-
-// GetAuthrAccessToken 获取授权方AccessToken
-func (ctx *Context) GetAuthrAccessToken(appid string) (string, error) {
-	return ctx.GetAuthrAccessTokenContext(context.Background(), appid)
-}
-
-// AuthrAccessToken 授权方AccessToken
-type AuthrAccessToken struct {
-	Appid        string `json:"authorizer_appid"`
-	AccessToken  string `json:"authorizer_access_token"`
-	ExpiresIn    int64  `json:"expires_in"`
-	RefreshToken string `json:"authorizer_refresh_token"`
-}
-
-// GetComponentAccessTokenContext 获取 ComponentAccessToken
-func (ctx *Context) GetComponentAccessTokenContext(stdCtx context.Context) (string, error) {
-	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
-	val := cache.GetContext(stdCtx, ctx.Cache, accessTokenCacheKey)
-	if val == nil {
-		return "", fmt.Errorf("cann't get component access token")
-	}
 	return val.(string), nil
 }
 
@@ -89,4 +81,14 @@ func (ctx *Context) RefreshAuthrTokenContext(stdCtx context.Context, appid, refr
 		return nil, err
 	}
 	return ret, nil
+}
+
+// GetComponentAccessTokenContext 获取 ComponentAccessToken
+func (ctx *Context) GetComponentAccessTokenContext(stdCtx context.Context) (string, error) {
+	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
+	val := cache.GetContext(stdCtx, ctx.Cache, accessTokenCacheKey)
+	if val == nil {
+		return "", fmt.Errorf("cann't get component access token")
+	}
+	return val.(string), nil
 }

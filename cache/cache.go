@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// 自带redis、memcache实现，可以自定义实现
 type Cache interface {
 	Set(key string, val interface{}, timeout time.Duration) error
 	Get(key string) interface{}
@@ -12,7 +13,6 @@ type Cache interface {
 	Delete(key string) error
 }
 
-// ContextCache interface
 type ContextCache interface {
 	Cache
 	GetContext(ctx context.Context, key string) interface{}
