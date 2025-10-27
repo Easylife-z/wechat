@@ -11,9 +11,62 @@ import (
 )
 
 const (
+	// 获取component_access_token
+	componentAccessTokenURL = "https://api.weixin.qq.com/cgi-bin/component/api_component_token"
 	// 获取授权账号调用令牌
 	refreshTokenURL = "https://api.weixin.qq.com/cgi-bin/component/api_authorizer_token?component_access_token=%s"
 )
+
+// ComponentAccessToken 第三方平台(获取ComponentAccessToken返回结果)
+type ComponentAccessToken struct {
+	util.CommonError
+	AccessToken string `json:"component_access_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+}
+
+// SetComponentAccessToken 通过component_verify_ticket 获取 ComponentAccessToken
+func (ctx *Context) SetComponentAccessToken(stdCtx context.Context, verifyTicket string) (*ComponentAccessToken, error) {
+	return ctx.SetComponentAccessTokenContext(stdCtx, verifyTicket)
+}
+
+// SetComponentAccessTokenContext 通过component_verify_ticket 获取 ComponentAccessToken
+func (ctx *Context) SetComponentAccessTokenContext(stdCtx context.Context, verifyTicket string) (*ComponentAccessToken, error) {
+	body := map[string]string{
+		"component_appid":         ctx.AppID,
+		"component_appsecret":     ctx.AppSecret,
+		"component_verify_ticket": verifyTicket,
+	}
+	respBody, err := util.PostJSONContext(stdCtx, componentAccessTokenURL, body)
+	if err != nil {
+		return nil, err
+	}
+
+	at := &ComponentAccessToken{}
+	if err := json.Unmarshal(respBody, at); err != nil {
+		return nil, err
+	}
+
+	if at.ErrCode != 0 {
+		return nil, fmt.Errorf("SetComponentAccessToken Error , errcode=%d , errmsg=%s", at.ErrCode, at.ErrMsg)
+	}
+
+	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
+	expires := at.ExpiresIn - 1500
+	if err := cache.SetContext(stdCtx, ctx.Cache, accessTokenCacheKey, at.AccessToken, time.Duration(expires)*time.Second); err != nil {
+		return nil, nil
+	}
+	return at, nil
+}
+
+// GetComponentAccessTokenContext 获取 ComponentAccessToken
+func (ctx *Context) GetComponentAccessTokenContext(stdCtx context.Context) (string, error) {
+	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
+	val := cache.GetContext(stdCtx, ctx.Cache, accessTokenCacheKey)
+	if val == nil {
+		return "", fmt.Errorf("cann't get component access token")
+	}
+	return val.(string), nil
+}
 
 // 获取授权账号调用令牌返回结果-授权方AccessToken
 type AuthrAccessToken struct {
@@ -24,7 +77,6 @@ type AuthrAccessToken struct {
 }
 
 // GetAuthrAccessToken 获取授权方AccessToken
-// 会依次调用GetAuthrAccessTokenContext、RefreshAuthrTokenContext、GetComponentAccessTokenContext
 func (ctx *Context) GetAuthrAccessToken(appid string) (string, error) {
 	return ctx.GetAuthrAccessTokenContext(context.Background(), appid)
 }
@@ -81,14 +133,4 @@ func (ctx *Context) RefreshAuthrTokenContext(stdCtx context.Context, appid, refr
 		return nil, err
 	}
 	return ret, nil
-}
-
-// GetComponentAccessTokenContext 获取 ComponentAccessToken
-func (ctx *Context) GetComponentAccessTokenContext(stdCtx context.Context) (string, error) {
-	accessTokenCacheKey := fmt.Sprintf("component_access_token_%s", ctx.AppID)
-	val := cache.GetContext(stdCtx, ctx.Cache, accessTokenCacheKey)
-	if val == nil {
-		return "", fmt.Errorf("cann't get component access token")
-	}
-	return val.(string), nil
 }
